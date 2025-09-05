@@ -1,4 +1,6 @@
 from io import StringIO
+import os
+import requests
 import gradio as gr
 import pandas as pd
 from datetime import datetime
@@ -8,10 +10,22 @@ from gpt4all import GPT4All
 # ---------------- Chatbot Class ----------------
 class PersonalFinanceChatbot:
     def __init__(self):
+        # Model path and download URL
+        self.model_path = "orca-mini-3b-gguf2-q4_0.gguf"
+        self.model_url = "https://huggingface.co/your-username/your-model/resolve/main/orca-mini-3b-gguf2-q4_0.gguf"
+
+        # Download model if not exists
+        if not os.path.exists(self.model_path):
+            print("Downloading GPT4All model...")
+            response = requests.get(self.model_url, stream=True)
+            with open(self.model_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            print("✅ Model downloaded.")
+
         # Load GPT4All model
-        model_path = "orca-mini-3b-gguf2-q4_0.gguf"
-        self.model = GPT4All(model_path)
-        print(f"✅ GPT4All model loaded: {model_path}")
+        self.model = GPT4All(self.model_path)
+        print(f"✅ GPT4All model loaded: {self.model_path}")
 
         # Store user profiles
         self.user_profiles = {}
@@ -35,7 +49,7 @@ class PersonalFinanceChatbot:
         full_prompt = f"{system_prompt}\n\nUser: {prompt}\nFinancial Assistant:"
 
         try:
-            # Correct GPT4All usage
+            # Correct GPT4All usage with session
             with self.model.chat_session() as session:
                 reply = session.generate(full_prompt, max_tokens=max_tokens)
             return reply
@@ -201,5 +215,5 @@ if __name__ == "__main__":
     app = create_interface()
     # Local launch
     app.launch(server_name="127.0.0.1", server_port=7860, debug=True)
-    # To create a public link, uncomment:
+    # For public link, uncomment:
     # app.launch(share=True)
